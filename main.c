@@ -1,47 +1,83 @@
 #include "stm32f10x.h"
-#include "stm32f10x_gpio.h"
-#include "stm32f10x_rcc.h"
 
-void delay1(int16_t time){
-    int i,j;
-    for(i = 0; i < time; i++){
-        for(j = 0; j < 0x2aff; j++);
+void GPIO_Config(void);
+void EXTI0_Config(void);
+void delay_ms(uint32_t ms);
+
+int main(void)
+{
+    GPIO_Config();
+    EXTI0_Config();
+
+    while(1)
+    {
+        GPIOC->ODR ^= GPIO_Pin_13;
+        delay_ms(500);
     }
 }
 
-void config(){
-    GPIO_InitTypeDef gpio;
-    
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
-    
-    gpio.GPIO_Pin = GPIO_Pin_0;
-    gpio.GPIO_Mode = GPIO_Mode_Out_PP;
-    gpio.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOB, &gpio);
-    
-    gpio.GPIO_Pin = GPIO_Pin_13;
-    gpio.GPIO_Mode = GPIO_Mode_IPU;
-    gpio.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOC, &gpio);
+void GPIO_Config(void)
+{
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOA, ENABLE);
+
+    GPIO_InitTypeDef GPIO_InitStructure;
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    GPIO_SetBits(GPIOC, GPIO_Pin_13);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    GPIO_SetBits(GPIOC, GPIO_Pin_14);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
-int main(){
-    int8_t cnt = 0, status = 0;
-    
-    config();
-    
-    while(1){
-        status = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_13);
-        delay1(2);
-        
-        if(status == 0 && GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_13) == 1) {
-            cnt = !cnt;
+void EXTI0_Config(void)
+{
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+
+    EXTI_InitTypeDef EXTI_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
+
+    EXTI_InitStructure.EXTI_Line = EXTI_Line0;
+    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);
+
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
+
+void EXTI0_IRQHandler(void)
+{
+    if (EXTI_GetITStatus(EXTI_Line0) != RESET)
+    {
+        EXTI_ClearITPendingBit(EXTI_Line0);
+        delay_ms(50);
+
+        if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0) == 0)
+        {
+            GPIOC->ODR ^= GPIO_Pin_14;
         }
-        
-        if(cnt == 1){
-            GPIO_ResetBits(GPIOB, GPIO_Pin_0);
-        } else {
-            GPIO_SetBits(GPIOB, GPIO_Pin_0);
-        }
+    }
+}
+
+void delay_ms(uint32_t ms)
+{
+    uint32_t i;
+    for(i=0; i < ms*8000; i++)
+    {
+        __NOP();
     }
 }
