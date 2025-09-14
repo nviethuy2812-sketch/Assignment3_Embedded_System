@@ -1,0 +1,50 @@
+Lập trình công tắc bật/tắt (Toggle Switch) cho STM32F1
+Đây là một dự án cơ bản minh họa cách sử dụng GPIO làm đầu vào (input) và đầu ra (output) trên vi điều khiển STM32F103, sử dụng thư viện Standard Peripheral Library (SPL).
+
+Mục tiêu của dự án là đọc trạng thái của một nút nhấn để điều khiển bật/tắt một đèn LED, mô phỏng hoạt động của một công tắc toggle.
+
+## Tính năng
+Điều khiển bật/tắt: Mỗi lần nhấn và nhả nút, trạng thái của đèn LED sẽ được đảo ngược (bật thành tắt, và tắt thành bật).
+
+Phát hiện sự kiện nhả nút: Chương trình được viết để chỉ thay đổi trạng thái của LED khi nút nhấn được nhả ra, tránh việc LED thay đổi liên tục khi nút được giữ.
+
+Chống dội phím: Sử dụng một kỹ thuật delay đơn giản để chống dội phím.
+
+## Cấu hình phần cứng
+Vi điều khiển: STM32F103C8T6 (Board Blue Pill hoặc tương tự).
+
+Nút nhấn:
+
+Nối một chân của nút nhấn vào chân PC13.
+
+Nối chân còn lại của nút nhấn vào GND.
+
+Lưu ý: Chân PC13 được cấu hình là Input Pull-Up (nhập với điện trở kéo lên), do đó không cần điện trở kéo ngoài.
+
+Đèn LED:
+
+Nối cực dương (+) của đèn LED vào chân PB0.
+
+Nối cực âm (-) của đèn LED qua một điện trở (ví dụ: 220Ω) xuống GND.
+
+## Cách hoạt động của code
+Hàm config():
+
+Kích hoạt xung clock cho GPIOB và GPIOC.
+
+Cấu hình chân PB0 là Output Push-Pull để điều khiển LED.
+
+Cấu hình chân PC13 là Input Pull-Up để đọc tín hiệu từ nút nhấn.
+
+Hàm main():
+
+Vào một vòng lặp vô tận while(1).
+
+Liên tục đọc trạng thái của nút nhấn ở chân PC13.
+
+Chương trình sẽ phát hiện sự kiện khi nút được nhả ra (chuyển từ trạng thái 0 sang 1).
+
+Mỗi khi phát hiện sự kiện nhả nút, một biến trạng thái (cnt) sẽ được đảo ngược.
+
+Dựa trên biến trạng thái này, chân PB0 sẽ được đặt ở mức CAO (tắt LED) hoặc THẤP (bật LED).
+
